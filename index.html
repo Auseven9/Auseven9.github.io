@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Morely | Claims Desk — CSR Portal</title>
+<style>
+  /* Theme tokens (dark/light implemented via [data-theme]) */
+  :root{
+    --bg:#0f172a; --panel:#0b1220; --muted:#94a3b8; --text:#e5e7eb; --brand:#38bdf8;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --info:#60a5fa;
+    --chip:#111827; --chipb:#0ea5e9; --border:#1f2937; --row:#07101a; --rowAlt:#081622;
+    --card:#0b1220; --shadow:0 10px 30px rgba(0,0,0,.45); --glass: rgba(255,255,255,0.03);
+    --radius:14px; --glass-2: rgba(255,255,255,0.02);
+  }
+  [data-theme="light"]{
+    --bg:#f8fafc; --panel:#ffffff; --muted:#64748b; --text:#0f172a; --brand:#0284c7;
+    --ok:#16a34a; --warn:#b45309; --bad:#dc2626; --info:#2563eb;
+    --chip:#e6eef8; --chipb:#0284c7; --border:#e6eef8; --row:#ffffff; --rowAlt:#f7fafc;
+    --card:#ffffff; --shadow:0 10px 30px rgba(2,6,23,.06); --glass: rgba(2,6,23,0.02);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--text); font-size:13px; -webkit-font-smoothing:antialiased}
+  header{position:sticky; top:0; z-index:60; backdrop-filter:saturate(140%) blur(6px); background:linear-gradient( to bottom, rgba(0,0,0,.25), rgba(0,0,0,0)), var(--panel); border-bottom:1px solid var(--border)}
+  .wrap{max-width:1280px; margin:0 auto; padding:14px}
+  .title{display:flex; gap:12px; align-items:center}
+  .logo{width:40px;height:40px;border-radius:10px;background:radial-gradient(60% 60% at 30% 30%,var(--brand),transparent), linear-gradient(145deg,#0b1220,#0f172a); box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), var(--shadow)}
+  .title h1{font-size:16px;margin:0}
+  .title small{color:var(--muted); font-weight:600; margin-left:6px; font-size:12px}
+  .toolbar{display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap}
+  .btn{background:var(--chip); color:var(--text); border:1px solid var(--border); padding:8px 10px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:transform .12s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.brand{background:linear-gradient(180deg,var(--brand),var(--chipb)); color:#00121a; border-color:transparent}
+  .btn.ghost{background:transparent}
+  .chip{padding:6px 10px;border-radius:999px;background:var(--chip); border:1px solid var(--border); font-size:12px; cursor:pointer}
+  .chip[data-active="1"]{background:linear-gradient(180deg,var(--brand),var(--chipb)); color:#052d45; border-color:transparent}
+
+  /* Layout */
+  .layout{display:grid; grid-template-columns: 1fr 360px; gap:18px; padding:16px; max-width:1280px; margin:0 auto 80px}
+  main{overflow:auto}
+  aside{position:sticky; top:78px; align-self:start; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+
+  /* Table / Grid */
+  .grid{display:grid; grid-template-columns: 1.25fr .9fr 1fr .9fr 1.1fr 1.4fr .9fr .8fr .8fr; gap:0; border:1px solid var(--border); border-radius:14px; overflow:hidden}
+  .grid .h, .grid .r{display:contents}
+  .grid .h div{background:linear-gradient(0deg, rgba(255,255,255,0.02), transparent), var(--panel); font-weight:700; padding:11px 10px; border-bottom:1px solid var(--border); position:sticky; top:78px; z-index:8; cursor:pointer; font-size:13px}
+  .grid .r div{padding:10px; background:var(--row); border-bottom:1px solid var(--border); font-size:13px}
+  .grid .r:nth-child(even) div{background:var(--rowAlt)}
+  .row{cursor:pointer; display:contents}
+  .sel{width:16px;height:16px;border:1px solid var(--border); border-radius:4px; display:inline-block; background:var(--rowAlt); vertical-align:middle; text-align:center; line-height:14px; font-size:12px}
+  .sel[data-on="1"]{background:linear-gradient(180deg,var(--brand),var(--chipb)); border-color:transparent; color:#00121a}
+  .tag{font-size:11px;padding:3px 6px;border-radius:999px;border:1px solid var(--border); background:var(--chip); color:var(--muted)}
+  .status{font-weight:700}
+  .s-Open{color:var(--info)} .s-Investigating{color:#c084fc} .s-Approved{color:var(--ok)} .s-Denied{color:var(--bad)} .s-Paid{color:#22d3ee} .s-Closed{color:var(--muted)}
+
+  .search{flex:1;display:flex;background:var(--rowAlt); border:1px solid var(--border); border-radius:12px; overflow:hidden; min-width:220px}
+  .search input{flex:1; padding:10px 12px; border:0; background:transparent; color:var(--text); outline:none}
+  .search button{background:transparent; border:0; color:var(--muted); padding:0 10px; cursor:pointer}
+
+  /* Pagination & footer */
+  .footer{display:flex; justify-content:space-between; align-items:center; padding:12px 0; color:var(--muted)}
+  .pagination{display:flex; gap:6px; align-items:center}
+  .pagination .btn{padding:6px 10px}
+
+  /* Aside detail */
+  .pad{padding:14px}
+  .tabs{display:flex; border-bottom:1px dashed var(--border)}
+  .tabs button{background:transparent;border:0;padding:10px 12px; cursor:pointer;color:var(--muted)}
+  .tabs button.active{color:var(--text); font-weight:700; border-bottom:2px solid var(--brand)}
+
+  .kv{display:grid; grid-template-columns: 120px 1fr; gap:6px; margin:8px 0}
+  .kv label{font-size:12px; color:var(--muted)}
+  .kv input, .kv textarea, .kv select{width:100%; padding:8px; border-radius:10px; border:1px solid var(--border); background:var(--rowAlt); color:var(--text); outline:none}
+  textarea{resize:vertical; min-height:64px}
+
+  /* Modal */
+  .modal{position:fixed; inset:0; background:rgba(2,6,23,.6); display:none; align-items:center; justify-content:center; z-index:100}
+  .modal .panel{width:min(960px, 94vw); max-height:86vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:12px}
+
+  /* small helpers */
+  .muted{color:var(--muted)}
+  .pill{font-size:12px;padding:6px 8px;border-radius:10px;background:rgba(2,132,199,.12)}
+  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; font-size:12px; padding:3px 6px; border-radius:6px; background:var(--rowAlt); border:1px solid var(--border)}
+  .toast{position:fixed; right:12px; bottom:12px; background:var(--panel); border:1px solid var(--border); padding:10px 12px; border-radius:10px; box-shadow:var(--shadow); display:none; z-index:120}
+  .hidden{display:none}
+  .small{font-size:12px;color:var(--muted)}
+  .flex{display:flex; align-items:center; gap:8px}
+  .space{justify-content:space-between}
+  .hl{border-left:3px solid var(--brand); padding-left:10px}
+
+  /* highlight for search */
+  .match { background: linear-gradient(90deg,#ffe58f33,#ffd66633); padding:0 2px; border-radius:3px; color:inherit; }
+
+  /* responsive */
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr; padding:8px}
+    aside{position:relative; top:auto; width:auto}
+    .grid{grid-template-columns:repeat(1,1fr)}
+    .grid .h div{position:static}
+  }
+  @media print{
+    header, .toolbar, aside, .footer, .modal, .toast{display:none!important}
+    body{background:#fff;color:#000}
+  }
+</style>
+</head>
+<body data-theme="dark">
+  <header>
+    <div class="wrap" style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="title">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h1>Morely Claims Desk</h1>
+            <small>Automotive Troubleshooting & CSR Portal</small>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="chip" id="themeToggle" title="Toggle theme" role="button">Theme</span>
+          <span class="chip" id="kbHelp" title="Shortcuts" role="button">Shortcuts</span>
+          <span class="chip" id="auditOpen" title="Open audit log" role="button">Audit</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search" title="Press / to search" style="min-width:360px">
+          <input id="q" placeholder="Search name, VIN, claim, vehicle, shop, adjuster, notes" aria-label="Search claims" />
+          <button id="clearQ" title="Clear search">✕</button>
+        </div>
+
+        <button class="btn brand" id="newBtn" title="n">New claim</button>
+        <button class="btn" id="bulkStatusBtn">Bulk status…</button>
+        <button class="btn" id="bulkDeleteBtn">Bulk delete</button>
+        <button class="btn" id="exportCSV" title="e">Export CSV</button>
+        <label class="btn ghost">Import CSV<input id="importCSV" type="file" accept=".csv" style="display:none"/></label>
+        <button class="btn ghost" id="exportJSON">Backup JSON</button>
+        <label class="btn ghost">Restore JSON<input id="importJSON" type="file" accept=".json" style="display:none"/></label>
+
+        <div style="margin-left:auto" class="small muted" id="count"></div>
+      </div>
+
+      <div id="filters" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="wrap" style="padding-top:0">
+      <div id="tableWrap" class="scroll" style="max-height:68vh; overflow:auto">
+        <div class="grid" id="grid" aria-live="polite">
+          <div class="h" role="row">
+            <div data-k="sel" title="Select page">✓</div>
+            <div data-k="claimId">Claim ID</div>
+            <div data-k="status">Status</div>
+            <div data-k="opened">Opened</div>
+            <div data-k="customer.name">Customer</div>
+            <div data-k="vehicle">Vehicle</div>
+            <div data-k="vin">VIN</div>
+            <div data-k="shop.name">Shop</div>
+            <div data-k="total">Total</div>
+          </div>
+          <div id="rows"></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="pagination">
+          <button class="btn" id="prev">Prev</button>
+          <span id="pageInfo" class="small muted"></span>
+          <button class="btn" id="next">Next</button>
+          <span class="muted">Rows <select id="perPage" style="margin-left:6px;padding:4px;border-radius:6px;border:1px solid var(--border);background:var(--rowAlt);color:var(--text)"><option>10</option><option>15</option><option>25</option></select></span>
+        </div>
+
+        <div>
+          <span class="muted">Changes auto-saved. Press <span class="kbd">/</span> to search, <span class="kbd">n</span> new, <span class="kbd">e</span> export CSV.</span>
+        </div>
+      </div>
+    </main>
+
+    <aside>
+      <div class="pad">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+          <div><h3 style="margin:0">Detail</h3><div class="small muted" id="detailSub" style="margin-top:6px"></div></div>
+          <div class="pill" id="detailClaimId">—</div>
+        </div>
+      </div>
+
+      <div class="pad">
+        <div class="tabs" role="tablist" aria-label="Detail tabs">
+          <button id="tabInfo" class="active" role="tab">Info</button>
+          <button id="tabAudit" role="tab">Audit</button>
+          <button id="tabAttach" role="tab">Attachments</button>
+        </div>
+
+        <div id="tabContent">
+          <!-- Info tab -->
+          <div id="infoPanel">
+            <form id="detailForm">
+              <div class="kv">
+                <label>Claim ID</label><div><input name="claimId" readonly/></div>
+                <label>Status</label><div>
+                  <select name="status">
+                    <option>Open</option><option>Investigating</option><option>Approved</option><option>Denied</option><option>Paid</option><option>Closed</option>
+                  </select>
+                </div>
+                <label>Opened</label><div><input name="opened" type="date"/></div>
+                <label>Customer</label><div><input name="customer.name"/></div>
+                <label>Email</label><div><input name="customer.email" type="email"/></div>
+                <label>Phone</label><div><input name="customer.phone"/></div>
+                <label>Address</label><div><input name="customer.address"/></div>
+                <label>City / ST</label><div style="display:flex;gap:6px"><input name="customer.city"/><input name="customer.state" style="width:56px" maxlength="2"/></div>
+
+                <label>Year</label><div><input name="vehicle.year" type="number" min="1900" max="2099"/></div>
+                <label>Make</label><div><input name="vehicle.make"/></div>
+                <label>Model</label><div><input name="vehicle.model"/></div>
+                <label>Trim</label><div><input name="vehicle.trim"/></div>
+
+                <label>VIN</label><div><input name="vin" minlength="17" maxlength="50"/></div>
+                <label>Mileage</label><div><input name="mileage" type="number" min="0"/></div>
+                <label>Warranty</label><div><select name="warranty"><option>Factory</option><option>Extended</option><option>Expired</option></select></div>
+
+                <label>Category</label><div><input name="category"/></div>
+                <label>Primary symptom</label><div><input name="symptom"/></div>
+                <label>Diagnostics</label><div><textarea name="diagnostics"></textarea></div>
+                <label>Findings</label><div><textarea name="findings"></textarea></div>
+
+                <label>Parts</label><div><input name="parts"/></div>
+                <label>Labor hours</label><div><input name="laborHours" step="0.1" type="number"/></div>
+                <label>Shop rate</label><div><input name="shopRate" step="1" type="number"/></div>
+
+                <label>Shop</label><div><input name="shop.name"/></div>
+                <label>Shop address</label><div><input name="shop.address"/></div>
+
+                <label>Adjuster</label><div><input name="adjuster"/></div>
+                <label>Notes</label><div><textarea name="notes"></textarea></div>
+
+                <label>Attachment (URL)</label><div><input name="attachment" placeholder="https://… (comma separated)"/></div>
+              </div>
+
+              <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end">
+                <button class="btn ok" id="saveDetail" type="button">Save</button>
+                <button class="btn" id="dupBtn" type="button">Duplicate</button>
+                <button class="btn bad" id="deleteBtn" type="button">Delete</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Audit tab -->
+          <div id="auditPanel" class="hidden" style="padding-top:10px">
+            <div id="auditList" style="font-family:ui-monospace,monospace; white-space:pre-wrap; max-height:320px; overflow:auto"></div>
+          </div>
+
+          <!-- Attachments tab -->
+          <div id="attachPanel" class="hidden" style="padding-top:10px">
+            <div id="attachments" style="display:flex;flex-direction:column;gap:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <input id="attachURL" placeholder="Paste image or file URL and press Add" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--rowAlt);color:var(--text)"/>
+              <button class="btn" id="addAttach">Add</button>
+            </div>
+            <div style="margin-top:8px">
+              <label class="btn ghost">Upload file<input id="uploadAttach" type="file" style="display:none" /></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="modal">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">New Claim</h3>
+        <button class="btn" id="closeModal">Close</button>
+      </div>
+      <div style="margin-top:12px">
+        <form id="form">
+          <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px">
+            <div style="grid-column:span 4"><label>Customer name</label><input name="customer.name" required/></div>
+            <div style="grid-column:span 4"><label>Email</label><input name="customer.email" type="email" required/></div>
+            <div style="grid-column:span 4"><label>Phone</label><input name="customer.phone" required/></div>
+
+            <div style="grid-column:span 6"><label>Address</label><input name="customer.address"/></div>
+            <div style="grid-column:span 3"><label>City</label><input name="customer.city"/></div>
+            <div style="grid-column:span 3"><label>State</label><input name="customer.state" maxlength="2"/></div>
+
+            <div style="grid-column:span 3"><label>Year</label><input name="vehicle.year" type="number" min="1900" max="2099" required/></div>
+            <div style="grid-column:span 3"><label>Make</label><input name="vehicle.make" required/></div>
+            <div style="grid-column:span 3"><label>Model</label><input name="vehicle.model" required/></div>
+            <div style="grid-column:span 3"><label>Trim</label><input name="vehicle.trim"/></div>
+
+            <div style="grid-column:span 6"><label>VIN</label><input name="vin" minlength="17" maxlength="50" required/></div>
+            <div style="grid-column:span 3"><label>Mileage</label><input name="mileage" type="number" min="0"/></div>
+            <div style="grid-column:span 3"><label>Warranty</label><select name="warranty"><option>Factory</option><option>Extended</option><option>Expired</option></select></div>
+
+            <div style="grid-column:span 4"><label>Category</label><select name="category"><option>Engine</option><option>Transmission</option><option>Electrical</option><option>Brakes</option><option>HVAC</option><option>Suspension</option><option>Infotainment</option></select></div>
+            <div style="grid-column:span 8"><label>Primary symptom</label><input name="symptom" /></div>
+
+            <div style="grid-column:span 12"><label>Diagnostics performed</label><textarea name="diagnostics" rows="3"></textarea></div>
+            <div style="grid-column:span 12"><label>Findings</label><textarea name="findings" rows="3"></textarea></div>
+
+            <div style="grid-column:span 4"><label>Parts list</label><input name="parts" /></div>
+            <div style="grid-column:span 4"><label>Labor hours</label><input name="laborHours" type="number" step="0.1"/></div>
+            <div style="grid-column:span 4"><label>Shop rate</label><input name="shopRate" type="number" step="1" value="125"/></div>
+
+            <div style="grid-column:span 6"><label>Shop name</label><input name="shop.name"/></div>
+            <div style="grid-column:span 6"><label>Shop address</label><input name="shop.address"/></div>
+
+            <div style="grid-column:span 6"><label>Adjuster</label><input name="adjuster"/></div>
+            <div style="grid-column:span 6"><label>Attachment URL</label><input name="attachment" placeholder="https://..." /></div>
+
+            <div style="grid-column:span 12; text-align:right; margin-top:8px"><button class="btn brand" type="submit">Create claim</button></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="auditModal">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Audit Log</h3>
+        <button class="btn" id="auditClose">Close</button>
+      </div>
+      <div style="margin-top:12px">
+        <div id="auditPanelList" style="font-family:ui-monospace,monospace; white-space:pre-wrap; max-height:60vh; overflow:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ===============================
+   Claims Desk — Full CSR Portal
+   - All data persisted to localStorage
+   - Editable, CRUD, bulk ops, audit, attachments
+   - Seed dataset preserved and expanded
+   =============================== */
+
+const STORE_KEY = 'morelyClaims.v2';
+const AUDIT_KEY = 'morelyAudit.v2';
+const COL_VIS_KEY = 'morelyCols.v1';
+
+// Load helpers
+const $ = (s, root=document) => root.querySelector(s);
+const $$ = (s, root=document) => Array.from((root||document).querySelectorAll(s));
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const load = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback } catch { return fallback } };
+const fmtMoney = n => Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0);
+const todayISO = () => (new Date()).toISOString().slice(0,10);
+const toast = (txt, t=2000) => { const tbox = $('#toast'); tbox.textContent = txt; tbox.style.display='block'; setTimeout(()=>tbox.style.display='none', t); }
+
+// ---- Audit
+let audit = load(AUDIT_KEY, []);
+function auditPush(msg){
+  const line = `${new Date().toISOString()}  ${msg}`;
+  audit.unshift(line);
+  save(AUDIT_KEY, audit);
+}
+
+// ---- Seed dataset (original dataset preserved, expanded)
+function seed(){
+  return [
+    {
+      claimId:'MRY-25-01842', status:'Investigating', opened:'2025-07-29',
+      customer:{name:'Leah Montrose', email:'leah.montrose@gmail.com', phone:'(216) 402-8896', address:'4128 Grafton Rd', city:'Brunswick', state:'OH'},
+      vehicle:{year:2021, make:'Toyota', model:'RAV4', trim:'XLE AWD'}, vin:'2T3P1RFV2MW215438', mileage:38420, warranty:'Extended',
+      category:'Engine', symptom:'Rough idle on cold start, MIL on',
+      diagnostics:'Pulled P0302, P0171. Smoke test found minor intake leak. Fuel trims +18%.',
+      findings:'Vacuum leak at PCV hose, cracked at elbow. Coil #2 weak under load.',
+      parts:'12262-36060 PCV hose, 90919-02266 coil, NGK IFR6T11 plugs x4',
+      laborHours:1.8, shopRate:128, total: 1.8*128 + 286,
+      shop:{name:'Lakeview Auto & Electric', address:'18911 Detroit Ave, Lakewood, OH'},
+      adjuster:'S. Kline', notes:'Customer uses vehicle for daycare drop-offs. Needs by Friday.', attachment:'https://i.imgur.com/veh1.jpg'
+    },
+    {
+      claimId:'MRY-25-01857', status:'Open', opened:'2025-08-01',
+      customer:{name:'Darius Patel', email:'darius.patel@proton.me', phone:'(614) 772-1044', address:'88 W Goodale St Apt 502', city:'Columbus', state:'OH'},
+      vehicle:{year:2018, make:'Chevrolet', model:'Silverado 1500', trim:'LT Z71 5.3L'}, vin:'3GCNKREC3JG255901', mileage:96210, warranty:'Expired',
+      category:'Transmission', symptom:'Hard 1-2 shift when warm, flare on 3-4',
+      diagnostics:'Fluid dark, smells burnt. No metal on pan magnet. TCC slip 300 rpm under light load.',
+      findings:'Clutch pack wear, valve body bore wear.',
+      parts:'24290865 reman valve body, AC Delco 10-9395 fluid x9qt',
+      laborHours:5.2, shopRate:120, total: 5.2*120 + 740,
+      shop:{name:'Westgate Driveline', address:'4120 George Rd, Columbus, OH'},
+      adjuster:'L. Moreno', notes:'Customer tows 3k lb boat monthly.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01863', status:'Approved', opened:'2025-08-03',
+      customer:{name:'Hannah Ko', email:'hko@cuyahogacc.edu', phone:'(440) 561-1190', address:'6216 Monticello Blvd', city:'Cleveland', state:'OH'},
+      vehicle:{year:2022, make:'Hyundai', model:'Elantra', trim:'SEL'}, vin:'5NPLM4AG9NH265341', mileage:24110, warranty:'Factory',
+      category:'Electrical', symptom:'Car intermittently won’t start, no crank',
+      diagnostics:'Battery 12.5V, drop to 7.9V on crank. Starter draw 240A. TSB 23-BE-012 matches.',
+      findings:'Battery internal short, updated starter relay recommended by TSB.',
+      parts:'AGM H5 battery, 36120-2M000 relay',
+      laborHours:0.7, shopRate:118, total: 0.7*118 + 249,
+      shop:{name:'Mayfield Auto Clinic', address:'512 SOM Center Rd, Mayfield, OH'},
+      adjuster:'R. Nguyen', notes:'Approved same day. Keep old battery for core.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01871', status:'Denied', opened:'2025-08-04',
+      customer:{name:'Marco DeSalvo', email:'marco.desalvo@danaherfab.com', phone:'(330) 828-7714', address:'1028 Taylor Ave', city:'Alliance', state:'OH'},
+      vehicle:{year:2017, make:'Subaru', model:'Forester', trim:'2.5i Premium'}, vin:'JF2SJABC1HH576903', mileage:132884, warranty:'Expired',
+      category:'Engine', symptom:'Consuming 1 qt oil per 700 miles',
+      diagnostics:'Compression 175/175/170/170 psi. No external leaks. Blue smoke after idle.',
+      findings:'Oil control ring wear beyond coverage. Prior owner used extended intervals.',
+      parts:'Short block option provided OOP', laborHours:12.5, shopRate:125, total: 0,
+      shop:{name:'Stark County Motors', address:'929 W State St, Alliance, OH'}, adjuster:'J. Hollins', notes:'Denied per policy 7.3 wear exclusion.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01890', status:'Paid', opened:'2025-08-07',
+      customer:{name:'Riley Sandoval', email:'riley.sandoval@triwestins.com', phone:'(937) 519-0041', address:'5986 Coventry Ct', city:'Beavercreek', state:'OH'},
+      vehicle:{year:2020, make:'Honda', model:'Civic', trim:'EX-T'}, vin:'2HGFC1F71LH706214', mileage:51200, warranty:'Extended',
+      category:'Brakes', symptom:'Pulsation at highway speeds during light braking',
+      diagnostics:'Measured runout .005" LF, .004" RF. Pads at 6mm.',
+      findings:'Warped rotors due to heat spots. Resurface within spec.',
+      parts:'18096-TBA-305 rotors x2, pads 45022-TBA-A11', laborHours:1.9, shopRate:126, total: 1.9*126 + 340,
+      shop:{name:'Greene County Brake & Tire', address:'1132 Dayton Xenia Rd, Dayton, OH'},
+      adjuster:'K. Atwood', notes:'Paid invoice #7831 on 2025-08-12.', attachment:'https://i.imgur.com/brakes.png'
+    },
+    {
+      claimId:'MRY-25-01895', status:'Open', opened:'2025-08-08',
+      customer:{name:'Stephanie Rho', email:'steph.rho@ameritech.io', phone:'(740) 711-2326', address:'74 E Wheeling St', city:'Lancaster', state:'OH'},
+      vehicle:{year:2023, make:'Ford', model:'F-150', trim:'XLT 4x4 2.7L'}, vin:'1FTEW1EP5PKF81203', mileage:18290, warranty:'Factory',
+      category:'Infotainment', symptom:'SYNC freezes, backup camera black screen',
+      diagnostics:'No DTCs. Firmware level APIM JR3T-14G381-AK. Known update JR3T-14G381-AL resolves.',
+      findings:'APIM firmware bug.', parts:'—', laborHours:0.5, shopRate:130, total: 0.5*130,
+      shop:{name:'Riverview Ford', address:'745 River Rd, Lancaster, OH'}, adjuster:'S. Kline', notes:'Request proof of update performed.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01901', status:'Closed', opened:'2025-08-10',
+      customer:{name:'Evan McAdams', email:'evan.mc@relaylabs.org', phone:'(513) 985-4420', address:'2219 Ashland Ave', city:'Cincinnati', state:'OH'},
+      vehicle:{year:2016, make:'BMW', model:'328i', trim:'xDrive'}, vin:'WBA8E3G59GNT28945', mileage:89310, warranty:'Expired',
+      category:'HVAC', symptom:'Driver side blows warm, passenger cold', diagnostics:'Low refrigerant, UV dye shows leak at condenser seam.',
+      findings:'Condenser corrosion leak.', parts:'64539229022 condenser, R134a 620g', laborHours:2.4, shopRate:135, total:2.4*135 + 410,
+      shop:{name:'Queen City Euro', address:'9414 Kenwood Rd, Cincinnati, OH'}, adjuster:'L. Moreno', notes:'Customer satisfied. Case closed.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01912', status:'Investigating', opened:'2025-08-12',
+      customer:{name:'Priya Narayanan', email:'priya.narayanan@akronu.edu', phone:'(330) 414-7701', address:'3098 Merriman Rd', city:'Akron', state:'OH'},
+      vehicle:{year:2019, make:'Nissan', model:'Rogue', trim:'SV AWD'}, vin:'JN8AT2MV3KW395214', mileage:72110, warranty:'Extended',
+      category:'Transmission', symptom:'Judder at 25–40 mph under light throttle', diagnostics:'CVT fluid dark. TSB NTB19-040F indicates reprogram + flush.',
+      findings:'CVT push-belt wear suspected.', parts:'NS-3 fluid x8, update P/N 31036-6TA0A', laborHours:2.1, shopRate:118, total:2.1*118 + 220,
+      shop:{name:'Montrose Nissan Service', address:'990 W Exchange St, Akron, OH'}, adjuster:'R. Nguyen', notes:'Request fluid sample photos.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01920', status:'Approved', opened:'2025-08-13',
+      customer:{name:'Gabriel Contreras', email:'gcontreras@tri-cmail.edu', phone:'(440) 361-3319', address:'77 W Washington St', city:'Painesville', state:'OH'},
+      vehicle:{year:2021, make:'Kia', model:'Sorento', trim:'SX 2.5T AWD'}, vin:'5XYRKDLF5MG120874', mileage:34840, warranty:'Factory',
+      category:'Engine', symptom:'Rattle at start-up, reduced power message', diagnostics:'P0016/P0017 present. Oil clean and full. TSB 24-EM-019 timing chain guide.',
+      findings:'Timing chain tensioner bleed-down.', parts:'24410-2S000 tensioner, guide set', laborHours:6.5, shopRate:122, total:6.5*122 + 520,
+      shop:{name:'Lake County Kia', address:'1975 Mentor Ave, Mentor, OH'}, adjuster:'K. Atwood', notes:'Approved pending parts availability.', attachment:''
+    },
+    {
+      claimId:'MRY-25-01928', status:'Open', opened:'2025-08-15',
+      customer:{name:'Tanya Wells', email:'twells@cablevision.net', phone:'(419) 237-0998', address:'904 N Main St', city:'Bowling Green', state:'OH'},
+      vehicle:{year:2015, make:'Jeep', model:'Grand Cherokee', trim:'Overland 3.6L'}, vin:'1C4RJFCG0FC712094', mileage:112430, warranty:'Expired',
+      category:'Electrical', symptom:'Random no crank, key fob not detected', diagnostics:'Battery new. WIN module shows intermittent antenna fault.',
+      findings:'RF module failing.', parts:'68080511AD WIN module', laborHours:1.1, shopRate:110, total:1.1*110 + 289,
+      shop:{name:'BG Chrysler Service', address:'15164 S Dixie Hwy, Bowling Green, OH'}, adjuster:'J. Hollins', notes:'Customer has only one fob.', attachment:''
+    },
+
+    /* Extra seeds added for variety (keeps original feel) */
+    {claimId:'MRY-25-01931', status:'Open', opened:'2025-07-23', customer:{name:'Noah Rosetti', email:'n.rosetti@cargo-logic.com', phone:'(216) 771-9920', address:'1211 Starkweather Ave', city:'Cleveland', state:'OH'}, vehicle:{year:2020, make:'Mazda', model:'CX-5', trim:'Touring'}, vin:'JM3KFBCM0L0763121', mileage:64220, warranty:'Extended', category:'Suspension', symptom:'Clunk over speed bumps LF', diagnostics:'End link play, bushing cracked.', findings:'Sway bar link worn.', parts:'K750669 link, MOOG K201852 bushings', laborHours:1.2, shopRate:120, total:1.2*120 + 150, shop:{name:'Broadview Auto', address:'6400 Broadview Rd, Parma, OH'}, adjuster:'R. Nguyen', notes:'', attachment:''},
+    {claimId:'MRY-25-01932', status:'Approved', opened:'2025-08-02', customer:{name:'Maya Schiffer', email:'maya.schiffer@lakearts.org', phone:'(440) 292-1186', address:'84 W Erie St', city:'Painesville', state:'OH'}, vehicle:{year:2014, make:'Volkswagen', model:'Jetta', trim:'SE 1.8T'}, vin:'3VWD17AJ7EM262118', mileage:128440, warranty:'Expired', category:'Engine', symptom:'Hesitation, misfire on boost', diagnostics:'P0234 overboost, DV torn.', findings:'Diverter valve diaphragm tear.', parts:'06H145710D DV, NGK BKR7EIX', laborHours:1.1, shopRate:115, total:1.1*115 + 140, shop:{name:'Harbor German', address:'2127 Mentor Ave, Painesville, OH'}, adjuster:'S. Kline', notes:'', attachment:''},
+    {claimId:'MRY-25-01933', status:'Closed', opened:'2025-06-30', customer:{name:'Aaron Blake', email:'ablake@cityworks.cc', phone:'(513) 740-8803', address:'4320 Ridge Ave', city:'Cincinnati', state:'OH'}, vehicle:{year:2022, make:'Tesla', model:'Model 3', trim:'RWD'}, vin:'5YJ3E1EA9NF285113', mileage:18240, warranty:'Factory', category:'Brakes', symptom:'Grinding noise rear at low speed', diagnostics:'Rust ridge on rotor lip, pads glazed.', findings:'Rear pads sticking due to debris.', parts:'Set rear pads, hardware kit', laborHours:0.9, shopRate:140, total:0.9*140 + 120, shop:{name:'Oakley EV Service', address:'3179 Madison Rd, Cincinnati, OH'}, adjuster:'K. Atwood', notes:'', attachment:''},
+    {claimId:'MRY-25-01934', status:'Paid', opened:'2025-07-18', customer:{name:'Sofia Jimenez', email:'sofia.jimenez@valpakmail.com', phone:'(330) 920-4412', address:'1150 Portage Trail', city:'Cuyahoga Falls', state:'OH'}, vehicle:{year:2019, make:'Toyota', model:'Camry', trim:'SE'}, vin:'4T1B11HK6KU281044', mileage:61220, warranty:'Extended', category:'HVAC', symptom:'AC warm at idle, cold while driving', diagnostics:'Condenser fan inop low speed.', findings:'Fan resistor open.', parts:'87138-0E040 resistor', laborHours:0.6, shopRate:118, total:0.6*118 + 95, shop:{name:'Falls Auto Air', address:'2301 State Rd, Cuyahoga Falls, OH'}, adjuster:'L. Moreno', notes:'', attachment:''},
+    {claimId:'MRY-25-01935', status:'Investigating', opened:'2025-08-11', customer:{name:'Julian Park', email:'julian.park@northcoaststeel.us', phone:'(440) 508-3302', address:'5014 Dover Center Rd', city:'North Olmsted', state:'OH'}, vehicle:{year:2018, make:'Audi', model:'Q5', trim:'Premium Plus'}, vin:'WA1BNAFY5J2146007', mileage:80400, warranty:'Expired', category:'Electrical', symptom:'MMI reboots randomly, SOS malfunction', diagnostics:'Low voltage DTC history, battery aging.', findings:'Battery at 45% SOH.', parts:'H7 AGM battery', laborHours:0.5, shopRate:150, total:0.5*150 + 220, shop:{name:'Euroline Service', address:'27100 Lorain Rd, North Olmsted, OH'}, adjuster:'J. Hollins', notes:'', attachment:''},
+    {claimId:'MRY-25-01936', status:'Open', opened:'2025-08-05', customer:{name:'Grace Lyon', email:'grace.lyon@northstarhc.org', phone:'(419) 482-1198', address:'1449 Tremainsville Rd', city:'Toledo', state:'OH'}, vehicle:{year:2016, make:'GMC', model:'Terrain', trim:'SLT 3.6L'}, vin:'2GKFLVE38G6359114', mileage:109880, warranty:'Expired', category:'Engine', symptom:'Timing rattle warm restart', diagnostics:'P0014/P0017, oil clean. Cam phaser wear likely.', findings:'Right bank phaser advance stuck.', parts:'12633613 phaser, 12646386 solenoid', laborHours:6.0, shopRate:115, total:6*115 + 250, shop:{name:'Glass City Auto', address:'3844 W Sylvania Ave, Toledo, OH'}, adjuster:'S. Kline', notes:'', attachment:''},
+    {claimId:'MRY-25-01937', status:'Approved', opened:'2025-08-09', customer:{name:'Owen Brooks', email:'obrooks@riverparkschools.org', phone:'(740) 660-9002', address:'287 Pinecrest Dr', city:'Marietta', state:'OH'}, vehicle:{year:2023, make:'Subaru', model:'Outback', trim:'Premium'}, vin:'4S4BTACC1P3221184', mileage:12110, warranty:'Factory', category:'Suspension', symptom:'Vehicle pulls right, new tires installed', diagnostics:'Cross-rotated tires, caster split .6°', findings:'Alignment needed, no parts.', parts:'4-wheel alignment', laborHours:1.0, shopRate:110, total:1*110 + 60, shop:{name:'Frontier Tire', address:'1200 Pike St, Marietta, OH'}, adjuster:'R. Nguyen', notes:'', attachment:''},
+    {claimId:'MRY-25-01938', status:'Open', opened:'2025-08-01', customer:{name:'Alyssa Decker', email:'alyssa.decker@artisanbakes.co', phone:'(614) 291-4403', address:'989 King Ave', city:'Columbus', state:'OH'}, vehicle:{year:2017, make:'Honda', model:'CR-V', trim:'EX-L AWD'}, vin:'2HKRW2H85HH646022', mileage:94550, warranty:'Extended', category:'Infotainment', symptom:'Bluetooth audio stutters', diagnostics:'Interference from phone case? Firmware 1.22 behind.', findings:'TSB update resolves.', parts:'USB update media', laborHours:0.4, shopRate:126, total:0.4*126 + 95, shop:{name:'Clintonville Honda', address:'3299 N High St, Columbus, OH'}, adjuster:'K. Atwood', notes:'', attachment:''},
+    {claimId:'MRY-25-01939', status:'Approved', opened:'2025-07-27', customer:{name:'Xavier Boone', email:'xboone@laketransit.gov', phone:'(440) 205-7400', address:'4755 Ridge Rd', city:'Willoughby', state:'OH'}, vehicle:{year:2015, make:'Ford', model:'Explorer', trim:'Limited 3.5L'}, vin:'1FM5K8F88FGA61204', mileage:136220, warranty:'Expired', category:'Brakes', symptom:'ABS light on, traction disabled', diagnostics:'C0037 RR speed sensor open.', findings:'Broken harness near hub.', parts:'Sensor, repair pigtail', laborHours:1.2, shopRate:119, total:1.2*119 + 140, shop:{name:'Lake County Fleet', address:'555 Blackbrook Rd, Painesville, OH'}, adjuster:'L. Moreno', notes:'', attachment:''},
+    {claimId:'MRY-25-01940', status:'Paid', opened:'2025-08-06', customer:{name:'Nina Vass', email:'nvass@pineneedlehome.com', phone:'(937) 431-7714', address:'611 Glenbury Dr', city:'Kettering', state:'OH'}, vehicle:{year:2021, make:'Volvo', model:'XC60', trim:'B5 AWD'}, vin:'YV4L12RL1M1732201', mileage:30210, warranty:'Factory', category:'Electrical', symptom:'ADAS warnings, windshield replaced last week', diagnostics:'Camera needs calibration.', findings:'No faults otherwise.', parts:'Calibration service', laborHours:1.3, shopRate:160, total:1.3*160 + 89, shop:{name:'Dayton ADAS Cal Lab', address:'75 Innovation Dr, Dayton, OH'}, adjuster:'J. Hollins', notes:'', attachment:''}
+  ];
+}
+
+// If no saved data, set seed
+let data = load(STORE_KEY, null) || (function(){ const s = seed(); save(STORE_KEY, s); return s; })();
+save(STORE_KEY, data);
+save(AUDIT_KEY, audit);
+
+// UI State
+let state = {
+  q: '',
+  page: 1,
+  perPage: +($('#perPage')?.value||10),
+  sortKey: 'opened',
+  sortDir: 'desc',
+  filters: { status: new Set(), category: new Set() },
+  selected: new Set(),
+  currentIdx: 0
+};
+
+const STATUSES = ['Open','Investigating','Approved','Denied','Paid','Closed'];
+const CATS = ['Engine','Transmission','Electrical','Brakes','HVAC','Suspension','Infotainment'];
+
+/* ---------------------------
+   Filters UI
+   --------------------------- */
+function renderFilters(){
+  const c = $('#filters'); c.innerHTML='';
+  const group = (label, items, key) => {
+    const wrap = document.createElement('div');
+    wrap.style.display='flex'; wrap.style.alignItems='center'; wrap.style.gap='8px';
+    const lab = document.createElement('span'); lab.textContent=label; lab.className='small muted';
+    wrap.appendChild(lab);
+    items.forEach(it=>{
+      const s = document.createElement('span');
+      s.className='chip'; s.textContent=it; s.dataset.active = state.filters[key].has(it)?'1':'0';
+      s.onclick=()=>{ state.filters[key].has(it)?state.filters[key].delete(it):state.filters[key].add(it); state.page=1; render(); };
+      wrap.appendChild(s);
+    });
+    c.appendChild(wrap);
+  };
+  group('Status', STATUSES, 'status');
+  group('Category', CATS, 'category');
+
+  // Column toggles
+  const columns = ['claimId','status','opened','customer.name','vehicle','vin','shop.name','total'];
+  const colWrap = document.createElement('div'); colWrap.style.display='flex'; colWrap.style.gap='8px'; colWrap.style.alignItems='center';
+  const colLab = document.createElement('span'); colLab.className='small muted'; colLab.textContent='Columns';
+  colWrap.appendChild(colLab);
+  const colState = load(COL_VIS_KEY, null) || {};
+  columns.forEach(k=>{
+    const s = document.createElement('span'); s.className='chip'; s.textContent=k;
+    s.dataset.active = (colState[k] ?? true) ? '1' : '0';
+    s.onclick = () => { const cur = (colState[k] ?? true); colState[k]=!cur; s.dataset.active = colState[k] ? '1' : '0'; save(COL_VIS_KEY,colState); render(); }
+    colWrap.appendChild(s);
+  });
+  c.appendChild(colWrap);
+}
+
+/* ---------------------------
+   Table rendering
+   --------------------------- */
+function rowHTML(r, idx){
+  const veh = `${r.vehicle?.year||''} ${r.vehicle?.make||''} ${r.vehicle?.model||''} ${r.vehicle?.trim||''}`.trim();
+  const total = fmtMoney(r.total||0);
+  const sel = state.selected.has(r.claimId)?'1':'0';
+  // Escape values when inserting to HTML
+  const esc = v => (v==null?'':String(v)).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<div class="r row" data-idx="${idx}">
+    <div><span class="sel" data-id="${r.claimId}" data-on="${sel}">${sel==='1'?'✓':''}</span></div>
+    <div>${esc(r.claimId)}</div>
+    <div class="status s-${r.status.replace(/\s+/g,'')}">${esc(r.status)}</div>
+    <div>${esc(r.opened)}</div>
+    <div>${esc(r.customer?.name||'')}</div>
+    <div>${esc(veh)}</div>
+    <div><span class="tag">${esc(r.vin)}</span></div>
+    <div>${esc(r.shop?.name||'')}</div>
+    <div>${total}</div>
+  </div>`;
+}
+
+function applyFilters(items){
+  const q = state.q.toLowerCase().trim();
+  const hasStatus = state.filters.status.size>0;
+  const hasCat = state.filters.category.size>0;
+  return items.filter(r=>{
+    if(hasStatus && !state.filters.status.has(r.status)) return false;
+    if(hasCat && !state.filters.category.has(r.category)) return false;
+    if(!q) return true;
+    const hay = [
+      r.claimId, r.status, r.opened,
+      r.customer?.name, r.customer?.email, r.customer?.phone, r.customer?.address, r.customer?.city, r.customer?.state,
+      r.vehicle?.year, r.vehicle?.make, r.vehicle?.model, r.vehicle?.trim, r.vin, r.shop?.name, r.shop?.address, r.adjuster,
+      r.symptom, r.diagnostics, r.findings, r.parts, r.notes
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function sortBy(items, key, dir){
+  const path = key.split('.');
+  const get = o => path.reduce((a,k)=>a?.[k], o);
+  items.sort((a,b)=>{
+    let av=get(a), bv=get(b);
+    if(av==null) av=''; if(bv==null) bv='';
+    if(typeof av==='string') av=av.toLowerCase();
+    if(typeof bv==='string') bv=bv.toLowerCase();
+    if(av===bv) return 0;
+    const res = av>bv?1:-1;
+    return dir==='asc'?res:-res;
+  });
+  return items;
+}
+
+function paginate(items){
+  const start = (state.page-1)*state.perPage;
+  return items.slice(start, start+state.perPage);
+}
+
+function render(){
+  // save data before render
+  save(STORE_KEY, data);
+  save(AUDIT_KEY, audit);
+
+  renderFilters();
+
+  const filtered = applyFilters([...data]);
+  $('#count').textContent = `${filtered.length} results`;
+
+  sortBy(filtered, state.sortKey, state.sortDir);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length/state.perPage));
+  if(state.page>totalPages) state.page = totalPages;
+
+  const pageItems = paginate(filtered);
+  $('#pageInfo').textContent = `Page ${state.page} of ${totalPages}`;
+
+  // Rows
+  const rowsHTML = pageItems.map(r=>rowHTML(r, data.indexOf(r))).join('');
+  $('#rows').innerHTML = rowsHTML;
+
+  // row click
+  $$('#rows .row').forEach(el=>{
+    el.onclick = (e) => {
+      const idx = +el.dataset.idx;
+      selectRow(idx);
+    }
+  });
+
+  // selection toggles per row
+  $$('#rows .sel').forEach(s=>{
+    s.onclick = (ev) => {
+      ev.stopPropagation();
+      const id = s.dataset.id;
+      if(state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
+      s.dataset.on = state.selected.has(id)?'1':'0';
+    }
+  });
+
+  // header sort bindings
+  $$('.grid .h div').forEach(h=>{
+    const k = h.dataset.k;
+    if(!k || k==='sel') return;
+    h.title = `Sort by ${k}`;
+    h.onclick = ()=>{ if(state.sortKey===k) state.sortDir = state.sortDir==='asc'?'desc':'asc'; else { state.sortKey=k; state.sortDir='asc' } ; render(); }
+  });
+}
+
+/* ---------------------------
+   Row selection, detail
+   --------------------------- */
+function selectRow(idx){
+  state.currentIdx = idx;
+  const r = data[idx];
+  if(!r) return;
+  showDetail(r);
+  // highlight selected in table visually
+  $$('#rows .r').forEach(el=>el.style.outline='none');
+  const el = $(`#rows .r[data-idx="${idx}"]`);
+  if(el) el.style.outline = '2px solid rgba(56,189,248,.08)';
+}
+
+function showDetail(r){
+  $('#detailClaimId').textContent = r.claimId;
+  $('#detailSub').textContent = `${r.status} • ${r.opened} • ${r.vehicle?.year||''} ${r.vehicle?.make||''} ${r.vehicle?.model||''}`;
+
+  // populate form
+  const form = $('#detailForm');
+  form.querySelector('[name="claimId"]').value = r.claimId;
+  form.querySelector('[name="status"]').value = r.status || '';
+  form.querySelector('[name="opened"]').value = r.opened || '';
+  form.querySelector('[name="customer.name"]').value = r.customer?.name || '';
+  form.querySelector('[name="customer.email"]').value = r.customer?.email || '';
+  form.querySelector('[name="customer.phone"]').value = r.customer?.phone || '';
+  form.querySelector('[name="customer.address"]').value = r.customer?.address || '';
+  form.querySelector('[name="customer.city"]').value = r.customer?.city || '';
+  form.querySelector('[name="customer.state"]').value = r.customer?.state || '';
+
+  form.querySelector('[name="vehicle.year"]').value = r.vehicle?.year || '';
+  form.querySelector('[name="vehicle.make"]').value = r.vehicle?.make || '';
+  form.querySelector('[name="vehicle.model"]').value = r.vehicle?.model || '';
+  form.querySelector('[name="vehicle.trim"]').value = r.vehicle?.trim || '';
+
+  form.querySelector('[name="vin"]').value = r.vin || '';
+  form.querySelector('[name="mileage"]').value = r.mileage || '';
+  form.querySelector('[name="warranty"]').value = r.warranty || '';
+
+  form.querySelector('[name="category"]').value = r.category || '';
+  form.querySelector('[name="symptom"]').value = r.symptom || '';
+  form.querySelector('[name="diagnostics"]').value = r.diagnostics || '';
+  form.querySelector('[name="findings"]').value = r.findings || '';
+
+  form.querySelector('[name="parts"]').value = r.parts || '';
+  form.querySelector('[name="laborHours"]').value = r.laborHours || '';
+  form.querySelector('[name="shopRate"]').value = r.shopRate || '';
+
+  form.querySelector('[name="shop.name"]').value = r.shop?.name || '';
+  form.querySelector('[name="shop.address"]').value = r.shop?.address || '';
+  form.querySelector('[name="adjuster"]').value = r.adjuster || '';
+  form.querySelector('[name="notes"]').value = r.notes || '';
+  form.querySelector('[name="attachment"]').value = r.attachment || '';
+
+  // audit list for this claim
+  const al = audit.filter(line => line.includes(r.claimId));
+  $('#auditList').textContent = al.join('\n');
+  // attachments
+  renderAttachments(r);
+}
+
+/* ---------------------------
+   Detail actions: save, delete, duplicate
+   --------------------------- */
+$('#saveDetail').onclick = () => {
+  const form = $('#detailForm');
+  const id = form.querySelector('[name="claimId"]').value;
+  const idx = data.findIndex(d => d.claimId===id);
+  if(idx===-1) return toast('Record missing');
+  const r = data[idx];
+  // read values
+  r.status = form.querySelector('[name="status"]').value;
+  r.opened = form.querySelector('[name="opened"]').value;
+  r.customer = r.customer || {};
+  r.customer.name = form.querySelector('[name="customer.name"]').value;
+  r.customer.email = form.querySelector('[name="customer.email"]').value;
+  r.customer.phone = form.querySelector('[name="customer.phone"]').value;
+  r.customer.address = form.querySelector('[name="customer.address"]').value;
+  r.customer.city = form.querySelector('[name="customer.city"]').value;
+  r.customer.state = form.querySelector('[name="customer.state"]').value;
+
+  r.vehicle = r.vehicle || {};
+  r.vehicle.year = +form.querySelector('[name="vehicle.year"]').value || r.vehicle.year;
+  r.vehicle.make = form.querySelector('[name="vehicle.make"]').value;
+  r.vehicle.model = form.querySelector('[name="vehicle.model"]').value;
+  r.vehicle.trim = form.querySelector('[name="vehicle.trim"]').value;
+
+  r.vin = form.querySelector('[name="vin"]').value;
+  r.mileage = +form.querySelector('[name="mileage"]').value || 0;
+  r.warranty = form.querySelector('[name="warranty"]').value;
+
+  r.category = form.querySelector('[name="category"]').value;
+  r.symptom = form.querySelector('[name="symptom"]').value;
+  r.diagnostics = form.querySelector('[name="diagnostics"]').value;
+  r.findings = form.querySelector('[name="findings"]').value;
+
+  r.parts = form.querySelector('[name="parts"]').value;
+  r.laborHours = parseFloat(form.querySelector('[name="laborHours"]').value) || 0;
+  r.shopRate = parseFloat(form.querySelector('[name="shopRate"]').value) || 0;
+  r.total = (r.laborHours || 0) * (r.shopRate || 0) + estimateParts(r.parts);
+
+  r.shop = r.shop || {};
+  r.shop.name = form.querySelector('[name="shop.name"]').value;
+  r.shop.address = form.querySelector('[name="shop.address"]').value;
+  r.adjuster = form.querySelector('[name="adjuster"]').value;
+  r.notes = form.querySelector('[name="notes"]').value;
+  r.attachment = form.querySelector('[name="attachment"]').value;
+
+  auditPush(`EDIT ${r.claimId} by user`);
+  save(STORE_KEY, data);
+  toast('Saved');
+  render();
+  selectRow(idx);
+};
+
+$('#deleteBtn').onclick = () => {
+  const id = $('#detailForm').querySelector('[name="claimId"]').value;
+  if(!confirm(`Delete ${id}? This cannot be undone.`)) return;
+  data = data.filter(d=>d.claimId!==id);
+  auditPush(`DELETE ${id}`);
+  save(STORE_KEY, data);
+  toast('Deleted');
+  state.selected.delete(id);
+  state.currentIdx = 0;
+  render();
+  selectRow(0);
+};
+
+$('#dupBtn').onclick = () => {
+  const id = $('#detailForm').querySelector('[name="claimId"]').value;
+  const rec = data.find(d=>d.claimId===id);
+  if(!rec) return toast('Record missing');
+  const copy = JSON.parse(JSON.stringify(rec));
+  copy.claimId = nextClaimId();
+  // small update to note
+  copy.notes = (copy.notes||'') + `\n[Duplicate of ${id} created ${todayISO()}]`;
+  data.unshift(copy);
+  auditPush(`DUP ${id} -> ${copy.claimId}`);
+  save(STORE_KEY, data);
+  toast('Duplicated');
+  render();
+  selectRow(0);
+};
+
+/* ---------------------------
+   Attachments handling
+   --------------------------- */
+function renderAttachments(r){
+  const out = $('#attachments'); out.innerHTML='';
+  const list = [];
+  if(r.attachment){
+    // comma separated allowed
+    const arr = String(r.attachment).split(',').map(x=>x.trim()).filter(Boolean);
+    arr.forEach(u => list.push(u));
+  }
+  if(r.attachments && Array.isArray(r.attachments)) r.attachments.forEach(u=>list.push(u));
+  if(list.length===0) out.innerHTML = '<div class="muted small">No attachments</div>';
+  else {
+    list.forEach((u, i)=>{
+      const card = document.createElement('div'); card.style.display='flex'; card.style.gap='8px'; card.style.alignItems='center';
+      const isImage = /\.jpg|jpeg|png|gif|webp|svg/i.test(u) || u.startsWith('data:image/');
+      const thumb = document.createElement('div'); thumb.style.width='64px'; thumb.style.height='48px'; thumb.style.borderRadius='6px'; thumb.style.overflow='hidden'; thumb.style.flex='0 0 64px';
+      if(isImage){
+        const img = document.createElement('img'); img.src=u; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
+        thumb.appendChild(img);
+      } else {
+        thumb.style.display='flex'; thumb.style.alignItems='center'; thumb.style.justifyContent='center';
+        thumb.textContent='FILE';
+      }
+      const meta = document.createElement('div'); meta.style.flex='1';
+      meta.innerHTML = `<div style="font-weight:600">${u.split('/').pop().slice(0,36)}</div><div class="small muted">${u}</div>`;
+      const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='6px';
+      const dl = document.createElement('a'); dl.href=u; dl.download = ''; dl.className='btn small'; dl.textContent='Open'; dl.target='_blank';
+      const rem = document.createElement('button'); rem.className='btn bad'; rem.textContent='Remove'; rem.onclick = () => {
+        // remove specific attachment from record
+        if(r.attachments && r.attachments.includes(u)){
+          r.attachments = r.attachments.filter(x=>x!==u);
+        } else if(r.attachment){
+          const arr = String(r.attachment).split(',').map(x=>x.trim()).filter(Boolean).filter(x=>x!==u);
+          r.attachment = arr.join(', ');
+        }
+        auditPush(`ATTACH_REMOVE ${r.claimId} ${u}`);
+        save(STORE_KEY, data); renderAttachments(r); toast('Attachment removed');
+      };
+      actions.appendChild(dl); actions.appendChild(rem);
+      card.appendChild(thumb); card.appendChild(meta); card.appendChild(actions);
+      out.appendChild(card);
+    });
+  }
+}
+
+$('#addAttach').onclick = () => {
+  const url = $('#attachURL').value.trim();
+  if(!url) return toast('Paste a URL');
+  const id = $('#detailForm').querySelector('[name="claimId"]').value;
+  const rec = data.find(d=>d.claimId===id);
+  if(!rec) return toast('Record missing');
+  rec.attachments = rec.attachments || [];
+  rec.attachments.unshift(url);
+  $('#attachURL').value='';
+  auditPush(`ATTACH_ADD ${id} ${url}`);
+  save(STORE_KEY, data);
+  renderAttachments(rec);
+  toast('Attachment added');
+};
+
+$('#uploadAttach').onchange = (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const id = $('#detailForm').querySelector('[name="claimId"]').value;
+    const rec = data.find(d=>d.claimId===id);
+    if(!rec) return toast('Record missing');
+    rec.attachments = rec.attachments || [];
+    rec.attachments.unshift(r.result);
+    auditPush(`ATTACH_UPLOAD ${id} ${f.name}`);
+    save(STORE_KEY, data); renderAttachments(rec); toast('Uploaded');
+  };
+  r.readAsDataURL(f);
+};
+
+/* ---------------------------
+   New claim modal
+   --------------------------- */
+const modalEl = $('#modal');
+$('#newBtn').onclick = () => {
+  $('#form').reset(); modalEl.style.display='flex';
+  $('#form [name="customer.name"]').focus();
+};
+$('#closeModal').onclick = ()=> modalEl.style.display='none';
+
+$('#form').onsubmit = (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const get = k => (fd.get(k) || '').toString().trim();
+  const y = +get('vehicle.year') || '';
+  const hrs = parseFloat(get('laborHours')||'0') || 0;
+  const rate = parseFloat(get('shopRate')||'0') || 0;
+  const id = nextClaimId();
+  const rec = {
+    claimId: id,
+    status: 'Open',
+    opened: todayISO(),
+    customer:{ name: get('customer.name'), email: get('customer.email'), phone: get('customer.phone'), address: get('customer.address'), city: get('customer.city'), state: get('customer.state') },
+    vehicle: { year: y, make: get('vehicle.make'), model: get('vehicle.model'), trim: get('vehicle.trim') },
+    vin: get('vin'),
+    mileage: +get('mileage')||0,
+    warranty: get('warranty'),
+    category: get('category'),
+    symptom: get('symptom'),
+    diagnostics: get('diagnostics'),
+    findings: get('findings'),
+    parts: get('parts'),
+    laborHours: hrs,
+    shopRate: rate,
+    total: (hrs*rate) + estimateParts(get('parts')),
+    shop: { name: get('shop.name'), address: get('shop.address') },
+    adjuster: get('adjuster'),
+    notes: '',
+    attachment: get('attachment') || ''
+  };
+  data.unshift(rec);
+  auditPush(`NEW ${id} ${rec.customer.name}`);
+  save(STORE_KEY, data);
+  state.page = 1; modalEl.style.display='none'; render(); selectRow(0); toast('Claim created');
+};
+
+/* ---------------------------
+   Helpers: IDs, estimate parts, CSV/JSON
+   --------------------------- */
+function estimateParts(parts){
+  if(!parts) return 0;
+  // simple: count comma separated entries
+  return parts.split(',').filter(Boolean).length * 85;
+}
+
+function nextClaimId(){
+  const nums = data.map(d=>+(d.claimId.split('-')[2]||0)).filter(Boolean);
+  const max = nums.length?Math.max(...nums):1800;
+  return `MRY-25-${(max+1).toString().padStart(5,'0')}`;
+}
+
+/* ---------------------------
+   Export / Import
+   --------------------------- */
+$('#exportCSV').onclick = () => {
+  const rows = [
+    ['claimId','status','opened','customer.name','customer.email','customer.phone','customer.address','customer.city','customer.state','vehicle.year','vehicle.make','vehicle.model','vehicle.trim','vin','mileage','warranty','category','symptom','diagnostics','findings','parts','laborHours','shopRate','total','shop.name','shop.address','adjuster','notes','attachment']
+  ];
+  data.forEach(r=> rows.push([
+    r.claimId,r.status,r.opened,r.customer?.name,r.customer?.email,r.customer?.phone,r.customer?.address,r.customer?.city,r.customer?.state,
+    r.vehicle?.year,r.vehicle?.make,r.vehicle?.model,r.vehicle?.trim,r.vin,r.mileage,r.warranty,r.category,
+    (r.symptom||'').replace(/\n/g,' '),(r.diagnostics||'').replace(/\n/g,' '),(r.findings||'').replace(/\n/g,' '),(r.parts||''),r.laborHours,r.shopRate,r.total,r.shop?.name,r.shop?.address,r.adjuster,(r.notes||'').replace(/\n/g,' '),r.attachment
+  ]));
+  const csv = rows.map(r=>r.map(escapeCSV).join(',')).join('\n');
+  download('morely_claims.csv', csv, 'text/csv');
+  auditPush('EXPORT CSV');
+};
+
+$('#exportJSON').onclick = () => {
+  download('morely_backup.json', JSON.stringify(data, null, 2), 'application/json');
+  auditPush('EXPORT JSON');
+};
+
+$('#importJSON').onchange = (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const arr = JSON.parse(rd.result);
+      if(!Array.isArray(arr)) return toast('Invalid JSON (not array)');
+      data = mergeData(data, arr);
+      auditPush(`RESTORE JSON ${arr.length} rows`);
+      save(STORE_KEY, data); render(); toast('JSON restored');
+    } catch (err) { toast('Invalid JSON') }
+  };
+  rd.readAsText(f);
+};
+
+$('#importCSV').onchange = (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const arr = parseCSV(rd.result);
+    if(arr.length>0){
+      const mapped = mapCSV(arr);
+      data = mergeData(data, mapped);
+      auditPush(`IMPORT CSV ${mapped.length} rows`);
+      save(STORE_KEY, data); render(); toast('CSV imported');
+    } else toast('No rows found');
+  };
+  rd.readAsText(f);
+};
+
+function parseCSV(text){
+  const lines=[]; let i=0, cur='', inq=false, row=[];
+  while(i<text.length){
+    const ch = text[i++];
+    if(inq){
+      if(ch==='"'){ if(text[i]==='"'){ cur+='"'; i++; } else inq=false } else cur+=ch;
+    } else {
+      if(ch==='\n'){ row.push(cur); lines.push(row); row=[]; cur='' }
+      else if(ch===','){ row.push(cur); cur='' }
+      else if(ch==='"'){ inq=true }
+      else if(ch!=='\r'){ cur+=ch }
+    }
+  }
+  if(cur!==''||row.length){ row.push(cur); lines.push(row) }
+  return lines;
+}
+function mapCSV(rows){
+  const hdr = rows.shift();
+  const idx = k => hdr.indexOf(k);
+  return rows.filter(r=>r.length===hdr.length).map(r=>({
+    claimId: r[idx('claimId')]||nextClaimId(),
+    status: r[idx('status')]||'Open',
+    opened: r[idx('opened')]||todayISO(),
+    customer: { name: r[idx('customer.name')], email: r[idx('customer.email')], phone: r[idx('customer.phone')], address: r[idx('customer.address')], city: r[idx('customer.city')], state: r[idx('customer.state')] },
+    vehicle: { year: +r[idx('vehicle.year')]||2020, make: r[idx('vehicle.make')], model: r[idx('vehicle.model')], trim: r[idx('vehicle.trim')] },
+    vin: r[idx('vin')], mileage: +r[idx('mileage')]||0, warranty: r[idx('warranty')],
+    category: r[idx('category')], symptom: r[idx('symptom')], diagnostics: r[idx('diagnostics')], findings: r[idx('findings')], parts: r[idx('parts')],
+    laborHours: +r[idx('laborHours')]||0, shopRate: +r[idx('shopRate')]||0, total: +r[idx('total')]||0,
+    shop: { name: r[idx('shop.name')], address: r[idx('shop.address')] }, adjuster: r[idx('adjuster')], notes: r[idx('notes')]
+  }));
+}
+function mergeData(cur, incoming){
+  const map = new Map(cur.map(r=>[r.claimId, r]));
+  incoming.forEach(r=>map.set(r.claimId, {...map.get(r.claimId)||{}, ...r}));
+  return Array.from(map.values()).sort((a,b)=>a.claimId.localeCompare(b.claimId));
+}
+function escapeCSV(v){ v = (v??'').toString(); if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"'; return v }
+function download(name, dataStr, type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([dataStr],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href) }
+
+/* ---------------------------
+   Bulk actions
+   --------------------------- */
+$('#bulkStatusBtn').onclick = () => {
+  if(state.selected.size===0) return toast('Select rows first');
+  const status = prompt('Set status to (Open, Investigating, Approved, Denied, Paid, Closed):');
+  if(!STATUSES.includes(status)) return toast('Invalid status');
+  data.forEach(r=>{ if(state.selected.has(r.claimId)){ auditPush(`STATUS ${r.claimId} ${r.status}→${status}`); r.status = status } });
+  save(STORE_KEY, data); render(); toast('Status updated');
+};
+$('#bulkDeleteBtn').onclick = () => {
+  if(state.selected.size===0) return toast('Select rows first');
+  if(!confirm(`Delete ${state.selected.size} selected claims?`)) return;
+  const toDel = Array.from(state.selected);
+  data = data.filter(r=>!state.selected.has(r.claimId));
+  toDel.forEach(id => auditPush(`DELETE ${id}`));
+  state.selected.clear();
+  save(STORE_KEY, data); render(); toast('Deleted selected');
+};
+
+/* ---------------------------
+   Paging controls
+   --------------------------- */
+$('#prev').onclick = () => { if(state.page>1){ state.page--; render(); } };
+$('#next').onclick = () => { state.page++; render(); };
+$('#perPage').onchange = (e) => { state.perPage = +e.target.value; state.page = 1; render(); };
+
+/* ---------------------------
+   Row select-all (header) -> toggles current page entries
+   --------------------------- */
+$$('.grid .h div').forEach(h=>{
+  if(h.dataset.k==='sel'){
+    h.onclick = (e) => {
+      // toggle all visible page rows
+      const pageRows = $$('#rows .r').map(r=>data[+r.dataset.idx]);
+      const allSelected = pageRows.every(r=> state.selected.has(r.claimId));
+      pageRows.forEach(r => { if(allSelected) state.selected.delete(r.claimId); else state.selected.add(r.claimId); });
+      render();
+    }
+  }
+});
+
+/* ---------------------------
+   Search, keyboard, misc
+   --------------------------- */
+$('#q').addEventListener('input', (e)=>{ state.q = e.target.value; state.page = 1; render(); });
+$('#clearQ').onclick = ()=>{ state.q=''; $('#q').value=''; render(); };
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){ e.preventDefault(); $('#q').focus(); }
+  if(e.key==='n' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){ $('#newBtn').click(); }
+  if(e.key==='e' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){ $('#exportCSV').click(); }
+  if(e.key==='?' ){ $('#kbHelp').click(); }
+});
+
+/* ---------------------------
+   Tabs, modals, audit viewer
+   --------------------------- */
+$('#tabInfo').onclick = () => { showTab('info'); };
+$('#tabAudit').onclick = () => { showTab('audit'); };
+$('#tabAttach').onclick = () => { showTab('attach'); };
+function showTab(t){
+  $('#tabInfo').classList.toggle('active', t==='info');
+  $('#tabAudit').classList.toggle('active', t==='audit');
+  $('#tabAttach').classList.toggle('active', t==='attach');
+  $('#infoPanel').classList.toggle('hidden', t!=='info');
+  $('#auditPanel').classList.toggle('hidden', t!=='audit');
+  $('#attachPanel').classList.toggle('hidden', t!=='attach');
+}
+/* audit modal */
+$('#auditOpen').onclick = ()=>{ $('#auditPanelList').textContent = audit.join('\n'); $('#auditModal').style.display='flex'; }
+$('#auditClose').onclick = ()=> $('#auditModal').style.display='none';
+$('#kbHelp').onclick = ()=> alert('Shortcuts:\n/ search\nn new claim\n e export CSV\n ? this help');
+
+/* ---------------------------
+   Theme toggle
+   --------------------------- */
+$('#themeToggle').onclick = () => {
+  const cur = document.body.dataset.theme || 'dark';
+  document.body.dataset.theme = cur==='dark' ? 'light' : 'dark';
+  localStorage.setItem('morelyTheme', document.body.dataset.theme);
+};
+if(localStorage.getItem('morelyTheme')) document.body.dataset.theme = localStorage.getItem('morelyTheme');
+
+/* ---------------------------
+   Audit modal open in aside (per claim)
+   --------------------------- */
+$('#auditOpen').addEventListener('click', () => $('#auditModal').style.display='flex');
+$('#auditClose').addEventListener('click', () => $('#auditModal').style.display='none');
+
+/* ---------------------------
+   Selection persistence and quick save
+   --------------------------- */
+window.addEventListener('beforeunload', ()=> save(STORE_KEY, data) );
+
+/* ---------------------------
+   Initial render & pick first row
+   --------------------------- */
+render();
+selectRow(0);
+auditPush('SYSTEM BOOT');
+save(AUDIT_KEY, audit);
+
+</script>
+</body>
+</html>
